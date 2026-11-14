@@ -6,6 +6,8 @@ on:
 
 jobs:
   build:
+    env:
+      MINDOS_CLOUD_URL: ${{ vars.MINDOS_CLOUD_URL || 'https://ql.school/mindos' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,3 +30,4 @@ jobs:
         with:
           name: mind-growth-os-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+

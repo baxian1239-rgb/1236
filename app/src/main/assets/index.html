@@ -16,7 +16,7 @@
 <header class="top"><div class="logo">OS</div><div><h1>心智成长OS · 人生RPG训练终端 <span class="badge">独立原型 · 非官方产品</span></h1><p class="sub">身份转变 · 愿景与反愿景 · 每日自动模式觉察 · 一年目标 / 月度BOSS / 今日任务</p></div></header>
 <div class="metrics"><div class="metric">重塑完成度 <b id="completion">0%</b></div><div class="metric">本月BOSS经验 <b class="green" id="xpLabel">0 / 100 XP</b></div><div class="metric">已完成今日任务 <b id="todayQuest">0</b></div><button class="pill-btn gray" id="demoBtn">载入演示范例</button><button class="pill-btn gray" id="exportBtn">导出数据</button><button class="pill-btn gray" id="importBtn">导入数据</button><button class="pill-btn" id="printBtn">打印手写表</button><input id="importFile" type="file" accept="application/json" style="display:none"></div>
 <nav class="tabs" aria-label="主要模块"><button class="tab active" data-tab="dashboard">1. 命运双轨与RPG每日作战台</button><button class="tab" data-tab="morning">2. 晨间深渊与圣殿挖掘</button><button class="tab" data-tab="day">3. 日间6道模式阻断闹钟</button><button class="tab" data-tab="evening">4. 晚间新赛季三重镜头</button><button class="tab" data-tab="models">5. 7大心智模型与手写画板</button></nav>
-<p class="notice" id="notice">本安卓体验版为独立设计，不代表截图软件的真实内部功能。数据只保存在当前手机应用内；不支持云同步。请定期使用“导出数据”备份个人记录。</p>
+<p class="notice" id="notice">未登录时，记录保存在当前设备。登录云端账号后，可在手机和电脑间同步。</p>
 <main>
 <section class="pane active" id="dashboard">
 <div class="card"><div class="flex" style="justify-content:space-between"><div><h2>本月 BOSS 战役 · 100格进度经验槽</h2><p class="desc">每完成一项真实行动，就点亮一格。点击已点亮格子可撤销。每月独立记录。</p></div><span class="section-tag" id="monthTitle"></span></div><div class="progress"><div id="xpProgress"></div></div><div class="progress-note"><span>用行动而不是意愿积累经验</span><b id="xpPct">0%</b></div><div class="grid100" id="xpGrid" aria-label="100格经验槽"></div></div>
@@ -38,6 +38,19 @@
 <div class="footer">心智成长OS · 可离线运行的交互原型 | 个人数据优先 | 引用的方法来源：Dan Koe 公开文章 | 非官方、不构成心理治疗</div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<section id="cloudAccount" style="padding:12px">
+  <details><summary>云端账号</summary>
+    <form>
+      <label>账号 <input name="account" autocomplete="username" required></label>
+      <label>密码 <input name="password" type="password" autocomplete="current-password" required></label>
+      <button value="login">登录</button>
+      <button value="register">注册</button>
+    </form>
+    <button data-logout hidden>退出登录</button>
+  </details>
+  <output aria-live="polite"></output>
+</section>
+<script src="sync.js?v=5"></script>
 <script>
 (()=>{'use strict';
 const KEY='mind_growth_os_demo_v1';const now=new Date();const today=now.toLocaleDateString('sv-SE');const month=today.slice(0,7);const $=(s)=>document.querySelector(s);const $$=(s)=>Array.from(document.querySelectorAll(s));const toast=(txt)=>{const x=$('#toast');x.textContent=txt;x.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>x.style.display='none',2300)};
@@ -49,7 +62,7 @@ const mQ=[
 const dQ=[['11:00','现在这件事，是否是在回避更重要的事情？'],['13:30','如果有人看过我过去2小时的行为，会认为我想实现什么？'],['15:15','此刻，我是在靠近想要的生活，还是在重复旧轨迹？'],['17:00','有什么重要的事情，我正假装它不重要？'],['19:30','今天有哪些行动来自保护旧身份，而不是内心真正的选择？'],['21:00','今天什么时候最有生命力？什么时候最消耗？']];
 const eQ=['今天我更清楚地看见了什么旧模式？','妨碍我改变的核心信念或行为是什么？','一句话：我不愿意让生活继续变成什么样？','一句话：我正在努力建立什么样的生活？','一年镜头：一年后，哪件可验证的事证明自己改变了？','一月镜头：这个月要完成哪一项关键挑战？','明日镜头：明天最重要的2—3个实际动作是什么？'];
 const models=[['身份驱动行为','先描述想成为的人，再安排符合身份的一个小动作。'],['反愿景定位','用不愿重演的轨迹提醒方向，但不过度制造焦虑。'],['反馈回路','设定目标、采取行动、观察结果、纠正下一步。'],['最小可行行动','把改变缩小到今天能完成的一个真实动作。'],['环境塑造选择','把重要行动放得更容易，把无效诱惑放得更远。'],['假设与实验','把“我做不到”改成一个可以验证的小实验。'],['每周系统复盘','每周检视数据、障碍和下一次具体调整。']];
-let state=load();function fresh(){return {profile:{},m:{},d:{},e:{},xp:{},quests:[],canvas:''}}function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&typeof s==='object'?{...fresh(),...s}:fresh()}catch{return fresh()}}function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{toast('本浏览器无法保存，建议导出数据备份')}}
+let state=MindCloud.load(load());function fresh(){return {profile:{},m:{},d:{},e:{},xp:{},quests:[],canvas:''}}function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&typeof s==='object'?{...fresh(),...s}:fresh()}catch{return fresh()}}function save(){try{if(MindCloud.active)MindCloud.save(state);else localStorage.setItem(KEY,JSON.stringify(state))}catch{toast('本浏览器无法保存，建议导出数据备份')}}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function monthXP(){if(!Array.isArray(state.xp[month]))state.xp[month]=[];return state.xp[month]}
 function xpCount(){return monthXP().filter(Boolean).length}
@@ -75,7 +88,7 @@ if(window.AndroidApp){try{window.AndroidApp.requestReminderStatus();}catch(e){};
 }else{$('#reminderBtn').onclick=()=>{if(reminderHandle){clearInterval(reminderHandle);reminderHandle=null;$('#reminderBtn').textContent='开启页面内提醒';$('#reminderStatus').textContent='已停止提醒';return}let seen=new Set();function check(){let d=new Date();let hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');dQ.forEach(([t,q])=>{const key=d.toLocaleDateString('sv-SE')+t;if(t===hh&&!seen.has(key)){seen.add(key);toast('模式阻断：'+q)}})}reminderHandle=setInterval(check,30000);check();$('#reminderBtn').textContent='停止页面内提醒';$('#reminderStatus').textContent='提醒已开启；需持续打开本页，锁屏或后台可能暂停。';toast('页面内提醒已开启')}};
 if(window.AndroidApp){$('#printBtn').onclick=()=>window.AndroidApp.printPage();}
 
-renderQuestions();renderModels();bindProfile();renderQuests();renderGrid();
+renderQuestions();renderModels();bindProfile();renderQuests();renderGrid();MindCloud.setup(load);
 })();
 </script>
 </body></html>

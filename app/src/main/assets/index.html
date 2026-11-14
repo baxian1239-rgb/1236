@@ -32,7 +32,7 @@
 </section>
 <div class="metrics" id="actionMetrics"><div class="metric">重塑完成度 <b id="completion">0%</b></div><div class="metric">本月BOSS经验 <b class="green" id="xpLabel">0 / 100 XP</b></div><div class="metric">已完成今日任务 <b id="todayQuest">0</b></div><button class="pill-btn" id="printBtn">打印手写表</button><input id="importFile" type="file" accept="application/json" style="display:none"></div>
 <nav class="tabs" aria-label="主要模块"><button class="tab active" data-tab="dashboard">1. 命运双轨与RPG每日作战台</button><button class="tab" data-tab="morning">2. 晨间深渊与圣殿挖掘</button><button class="tab" data-tab="day">3. 日间6道模式阻断闹钟</button><button class="tab" data-tab="evening">4.复盘记录+晚间三重镜</button><button class="tab" data-tab="models">5. 7大心智模型与手写画板</button></nav>
-<p class="notice" id="notice">未登录时，记录保存在当前设备。登录云端账号后，可在手机和电脑间同步。</p>
+
 <main>
 <section class="pane active" id="dashboard">
 <div class="card"><div class="flex" style="justify-content:space-between"><div><h2>本月 BOSS 战役 · 100格进度经验槽</h2><p class="desc">每完成一项真实行动，就点亮一格。点击已点亮格子可撤销。每月独立记录。</p></div><span class="section-tag" id="monthTitle"></span></div><div class="progress"><div id="xpProgress"></div></div><div class="progress-note"><span>用行动而不是意愿积累经验</span><b id="xpPct">0%</b></div><div class="grid100" id="xpGrid" aria-label="100格经验槽"></div></div>
@@ -51,7 +51,6 @@
 <section class="pane" id="evening"><div class="card"><h2>晚间：复盘与三重镜头</h2><p class="desc">把一天的觉察压缩成明确方向和第二天能执行的动作。</p><div id="eveningQuestions"></div><p class="tiny">建议在晚上给自己10—15分钟，重点关注行为模式，而不是给自己打分。</p></div></section>
 <section class="pane" id="models"><div class="card"><h2>七大心智模型（本原型的扩展设计）</h2><p class="desc">以下七项是产品设计建议，不是截图软件已确认的真实内容，也不声称为 Dan Koe 原文的“七大模型”。</p><div class="models" id="modelsGrid"></div></div><div class="card" id="canvasCard"><h2>手写觉察画板</h2><p class="desc">把本周最重要的模式画出来：触发 → 反应 → 新选择。支持鼠标或手指书写。</p><div class="canvas-wrap"><canvas id="drawCanvas" width="1000" height="240" aria-label="手绘画板"></canvas></div><div class="flex spaced"><button class="action secondary" id="clearCanvas">清除画板</button><button class="action" id="saveCanvas">保存为PNG图片</button><span class="tiny">画板保存在当前设备的浏览器中。</span></div></div></section>
 </main>
-<div class="footer">心智成长OS · 可离线运行的交互原型 | 个人数据优先 | 引用的方法来源：Dan Koe 公开文章 | 非官方、不构成心理治疗</div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 <section class="card" id="settings" hidden>
@@ -63,6 +62,7 @@
       <label>密码 <input name="password" type="password" autocomplete="current-password" required></label>
       <button value="login">登录</button>
       <button value="register">注册</button>
+          <p class="notice" id="notice">未登录时，记录保存在当前设备。登录云端账号后，可在手机和电脑间同步。</p>
     </form>
     <button data-logout hidden>退出登录</button>
   </details>

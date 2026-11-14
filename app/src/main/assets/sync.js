@@ -43,6 +43,7 @@
       }
     }
     write(cacheKey(),cache);
+    if(status) status.textContent='已保存在本机，待同步';
   }
   async function api(action, body, auth = session) {
     let result;
@@ -133,7 +134,7 @@
     const logout = box.querySelector('[data-logout]');
     form.hidden = !!session;
     logout.hidden = !session;
-    status.textContent = session ? '已登录 '+session.account+' · 等待同步' : '使用本地数据';
+    status.textContent = session ? '已保存在本机，待同步' : '使用本地数据';
     form.onsubmit = async event => {
       event.preventDefault();
       if (busy) return;

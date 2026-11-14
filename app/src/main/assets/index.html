@@ -15,19 +15,23 @@
 <div class="app">
 <header class="top"><div class="logo">OS</div><div><h1>心智成长OS · 人生RPG训练终端 <span class="badge">独立原型 · 非官方产品</span></h1><p class="sub">身份转变 · 愿景与反愿景 · 每日自动模式觉察 · 一年目标 / 月度BOSS / 今日任务</p></div></header>
 <section class="card">
-<h2>当前行动</h2>
-<label class="field">长期目标 <input data-field="annual" placeholder="例如：一年做到 7 亿营收"></label>
-<label class="field">当前项目 <input data-field="currentProject"></label>
-<label class="field">下一步 <textarea data-field="nextAction" rows="2"></textarea></label>
-<details><summary>我卡住了</summary>
-<label class="field">卡在哪 <textarea id="blocker" rows="2"></textarea></label>
+<h2>当前行动</h2><label class="field">今天要交付什么 <input type="text" style="display:block;width:100%;box-sizing:border-box" id="deliverable"></label>
+<label class="field">长期目标 <input type="text" style="display:block;width:100%;box-sizing:border-box" data-field="annual" placeholder="一年做到7亿营收"></label>
+<label class="field">当前项目 <input type="text" style="display:block;width:100%;box-sizing:border-box" data-field="currentProject"></label>
+<label class="field">下一步 <input type="text" style="display:block;width:100%;box-sizing:border-box" data-field="nextAction"></label>
+<details open><summary>立刻执行+记录卡点</summary>
+<label class="field">卡在哪 <input type="text" style="display:block;width:100%;box-sizing:border-box" id="blocker"></label>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="action" id="saveBlocker">记录卡点和下一步</button>
+<button class="action" id="playFocus" aria-pressed="false">音乐+立刻执行</button>
+</div>
+<audio id="focusAudio" preload="none" src="focus-scene.mp3"></audio>
 </details>
 <button class="action" id="openSettings">账号与设置</button>
 <output id="syncSummary" aria-live="polite"></output>
 </section>
-<div class="metrics"><div class="metric">重塑完成度 <b id="completion">0%</b></div><div class="metric">本月BOSS经验 <b class="green" id="xpLabel">0 / 100 XP</b></div><div class="metric">已完成今日任务 <b id="todayQuest">0</b></div><button class="pill-btn" id="printBtn">打印手写表</button><input id="importFile" type="file" accept="application/json" style="display:none"></div>
-<nav class="tabs" aria-label="主要模块"><button class="tab active" data-tab="dashboard">1. 命运双轨与RPG每日作战台</button><button class="tab" data-tab="morning">2. 晨间深渊与圣殿挖掘</button><button class="tab" data-tab="day">3. 日间6道模式阻断闹钟</button><button class="tab" data-tab="evening">4. 晚间新赛季三重镜头</button><button class="tab" data-tab="models">5. 7大心智模型与手写画板</button></nav>
+<div class="metrics" id="actionMetrics"><div class="metric">重塑完成度 <b id="completion">0%</b></div><div class="metric">本月BOSS经验 <b class="green" id="xpLabel">0 / 100 XP</b></div><div class="metric">已完成今日任务 <b id="todayQuest">0</b></div><button class="pill-btn" id="printBtn">打印手写表</button><input id="importFile" type="file" accept="application/json" style="display:none"></div>
+<nav class="tabs" aria-label="主要模块"><button class="tab active" data-tab="dashboard">1. 命运双轨与RPG每日作战台</button><button class="tab" data-tab="morning">2. 晨间深渊与圣殿挖掘</button><button class="tab" data-tab="day">3. 日间6道模式阻断闹钟</button><button class="tab" data-tab="evening">复盘记录+晚间三重镜头</button><button class="tab" data-tab="models">5. 7大心智模型与手写画板</button></nav>
 <p class="notice" id="notice">未登录时，记录保存在当前设备。登录云端账号后，可在手机和电脑间同步。</p>
 <main>
 <section class="pane active" id="dashboard">
@@ -69,7 +73,7 @@
 <button class="action" id="importBtn">从备份恢复</button>
 </details>
 </section>
-<script src="sync.js?v=6"></script>
+<script src="sync.js?v=7"></script>
 <script>
 (()=>{'use strict';
 const KEY='mind_growth_os_demo_v1';const now=new Date();const today=now.toLocaleDateString('sv-SE');const month=today.slice(0,7);const $=(s)=>document.querySelector(s);const $$=(s)=>Array.from(document.querySelectorAll(s));const toast=(txt)=>{const x=$('#toast');x.textContent=txt;x.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>x.style.display='none',2300)};
@@ -81,7 +85,7 @@ const mQ=[
 const dQ=[['11:00','现在这件事，是否是在回避更重要的事情？'],['13:30','如果有人看过我过去2小时的行为，会认为我想实现什么？'],['15:15','此刻，我是在靠近想要的生活，还是在重复旧轨迹？'],['17:00','有什么重要的事情，我正假装它不重要？'],['19:30','今天有哪些行动来自保护旧身份，而不是内心真正的选择？'],['21:00','今天什么时候最有生命力？什么时候最消耗？']];
 const eQ=['今天我更清楚地看见了什么旧模式？','妨碍我改变的核心信念或行为是什么？','一句话：我不愿意让生活继续变成什么样？','一句话：我正在努力建立什么样的生活？','一年镜头：一年后，哪件可验证的事证明自己改变了？','一月镜头：这个月要完成哪一项关键挑战？','明日镜头：明天最重要的2—3个实际动作是什么？'];
 const models=[['身份驱动行为','先描述想成为的人，再安排符合身份的一个小动作。'],['反愿景定位','用不愿重演的轨迹提醒方向，但不过度制造焦虑。'],['反馈回路','设定目标、采取行动、观察结果、纠正下一步。'],['最小可行行动','把改变缩小到今天能完成的一个真实动作。'],['环境塑造选择','把重要行动放得更容易，把无效诱惑放得更远。'],['假设与实验','把“我做不到”改成一个可以验证的小实验。'],['每周系统复盘','每周检视数据、障碍和下一次具体调整。']];
-let state=MindCloud.load(load());function fresh(){return {profile:{},m:{},d:{},e:{},xp:{},quests:[],canvas:''}}function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&typeof s==='object'?{...fresh(),...s}:fresh()}catch{return fresh()}}function save(){try{if(MindCloud.active)MindCloud.save(state);else localStorage.setItem(KEY,JSON.stringify(state))}catch{toast('本浏览器无法保存，建议导出数据备份')}}
+let state=MindCloud.load(load());function fresh(){return {profile:{},m:{},d:{},e:{},xp:{},quests:[],canvas:''}}function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&typeof s==='object'?{...fresh(),...s}:fresh()}catch{return fresh()}}function save(){try{if(MindCloud.active)MindCloud.save(state);else {localStorage.setItem(KEY,JSON.stringify(state));document.querySelector('#cloudAccount output').textContent='已保存在本机'}}catch{toast('本浏览器无法保存，建议导出数据备份')}}
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function monthXP(){if(!Array.isArray(state.xp[month]))state.xp[month]=[];return state.xp[month]}
 function xpCount(){return monthXP().filter(Boolean).length}
@@ -115,11 +119,11 @@ $('#openSettings').onclick=()=>{
 $('#saveBlocker').onclick=()=>{
   const note=$('#blocker').value.trim();
   const next=state.profile.nextAction?.trim();
-  if(!note||!next) return toast('请填写卡点和下一步');
-  state.e[today+':blocker:'+Date.now()]=JSON.stringify({note,next});
+  if(!note) return toast('请填写卡点');
+  state.e[today+':blocker:'+Date.now()]=JSON.stringify({note,next:next||''});
   save();
   $('#blocker').value='';
-  $('#saveBlocker').closest('details').open=false;
+  toast('已记录卡点');
   renderHistory();
 };
 const review=document.createElement('section');
@@ -127,7 +131,38 @@ review.className='card';
 review.innerHTML='<h2>复盘记录</h2><label>日期 <select></select></label><div></div>';
 $('#evening').prepend(review);
 const dates=review.querySelector('select');
+const eveningNotes=document.createElement('section');
+eveningNotes.className='card';
+eveningNotes.innerHTML='<h2>今日小结</h2><ul id="completedToday"></ul><label class="field">实际推进了什么？<textarea id="dailyProgress" rows="2"></textarea></label><label class="field">明天从哪一步接上？<textarea id="tomorrowAction" rows="2"></textarea></label>';
+review.after(eveningNotes);
+const yesterday=new Date(now);
+yesterday.setDate(yesterday.getDate()-1);
+const priorDay=yesterday.toLocaleDateString('sv-SE');
+if(!Object.hasOwn(state.profile,'actionDate') || state.profile.actionDate!==today){
+  const carry=state.e[priorDay+':tomorrow'];
+  if(carry) state.profile.nextAction=carry;
+  state.profile.actionDate=today;
+  save();
+}
+for(const [id,key] of [['deliverable','deliverable'],['dailyProgress','progress'],['tomorrowAction','tomorrow']]){
+  const input=document.getElementById(id);
+  const record=today+':'+key;
+  input.value=state.e[record]||'';
+  input.oninput=()=>{state.e[record]=input.value;save();};
+}
 function renderHistory(){
+  const completed=$('#completedToday');
+  completed.replaceChildren();
+  for(const task of state.quests.filter(task=>task.day===today&&task.done)){
+    const row=document.createElement('li');
+    row.textContent=task.text;
+    completed.appendChild(row);
+  }
+  if(!completed.childElementCount){
+    const row=document.createElement('li');
+    row.textContent='今天还没有已完成的任务';
+    completed.appendChild(row);
+  }
   const selected=dates.value||today;
   const all=new Set([today]);
   const groups=[['m','晨间',mQ],['d','日间',dQ.map(item=>item[1])],['e','晚间',eQ]];
@@ -154,7 +189,7 @@ function renderHistory(){
         const entry=JSON.parse(value);
         row.textContent='卡点：'+entry.note+'\n下一步：'+entry.next;
       }else{
-        row.textContent=label+' · '+(questions[Number(field)]||field)+'\n'+value;
+        row.textContent=label+' · '+(questions[Number(field)]||({deliverable:'今日交付',progress:'实际推进',tomorrow:'明天从哪一步接上'})[field]||field)+'\n'+value;
       }
       body.appendChild(row);
     }
@@ -163,9 +198,26 @@ function renderHistory(){
 }
 dates.onchange=renderHistory;
 document.querySelector('[data-tab="evening"]').addEventListener('click',renderHistory);
+const player=document.getElementById('focusAudio');
+const musicButton=document.getElementById('playFocus');
+function updateMusicButton(){
+  musicButton.textContent=player.paused?'音乐+立刻执行':'暂停音乐';
+  musicButton.setAttribute('aria-pressed',String(!player.paused));
+  $('#actionMetrics').style.display=player.paused?'':'none';
+  $('.tabs').style.display=player.paused?'':'none';
+  for(const pane of $$('.pane')) pane.style.display=player.paused?'':'none';
+}
+for(const event of ['play','pause','ended']) player.addEventListener(event,updateMusicButton);
+musicButton.addEventListener('click',async()=>{
+  if(!player.paused){player.pause();return;}
+  try{await player.play();document.querySelector('[data-field=nextAction]').scrollIntoView({block:'nearest'});}catch{toast('声景播放失败，请刷新后重试');}
+});
 renderHistory();
 renderQuestions();renderModels();bindProfile();renderQuests();renderGrid();MindCloud.setup(load);
 })();
 </script>
 </body></html>
+
+
+
 

@@ -11,9 +11,9 @@ android {
         applicationId 'com.quanlu.mindos'
         minSdk 26
         targetSdk 35
-        versionCode 3
+        versionCode 4
         buildConfigField 'String', 'CLOUD_URL', '"' + cloudUrl + '"'
-        versionName '0.3.0'
+        versionName '0.3.1'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

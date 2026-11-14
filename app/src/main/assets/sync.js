@@ -119,6 +119,16 @@
   function setup(getLegacy) {
     const box = document.querySelector('#cloudAccount');
     status = box.querySelector('output');
+    const summary = document.querySelector('#syncSummary');
+    if (summary) {
+      const update = () => {
+        const message = status.textContent;
+        summary.textContent = message.startsWith('同步暂停') ? '同步失败' : message;
+        summary.title = message;
+      };
+      new MutationObserver(update).observe(status, {childList:true,subtree:true,characterData:true});
+      update();
+    }
     const form = box.querySelector('form');
     const logout = box.querySelector('[data-logout]');
     form.hidden = !!session;
@@ -164,6 +174,7 @@
   }
   window.MindCloud = {load,save,setup,get active(){return !!session;}};
 })();
+
 
 
 

@@ -14,7 +14,19 @@
 <body>
 <div class="app">
 <header class="top"><div class="logo">OS</div><div><h1>心智成长OS · 人生RPG训练终端 <span class="badge">独立原型 · 非官方产品</span></h1><p class="sub">身份转变 · 愿景与反愿景 · 每日自动模式觉察 · 一年目标 / 月度BOSS / 今日任务</p></div></header>
-<div class="metrics"><div class="metric">重塑完成度 <b id="completion">0%</b></div><div class="metric">本月BOSS经验 <b class="green" id="xpLabel">0 / 100 XP</b></div><div class="metric">已完成今日任务 <b id="todayQuest">0</b></div><button class="pill-btn gray" id="demoBtn">载入演示范例</button><button class="pill-btn gray" id="exportBtn">导出数据</button><button class="pill-btn gray" id="importBtn">导入数据</button><button class="pill-btn" id="printBtn">打印手写表</button><input id="importFile" type="file" accept="application/json" style="display:none"></div>
+<section class="card">
+<h2>当前行动</h2>
+<label class="field">长期目标 <input data-field="annual" placeholder="例如：一年做到 7 亿营收"></label>
+<label class="field">当前项目 <input data-field="currentProject"></label>
+<label class="field">下一步 <textarea data-field="nextAction" rows="2"></textarea></label>
+<details><summary>我卡住了</summary>
+<label class="field">卡在哪 <textarea id="blocker" rows="2"></textarea></label>
+<button class="action" id="saveBlocker">记录卡点和下一步</button>
+</details>
+<button class="action" id="openSettings">账号与设置</button>
+<output id="syncSummary" aria-live="polite"></output>
+</section>
+<div class="metrics"><div class="metric">重塑完成度 <b id="completion">0%</b></div><div class="metric">本月BOSS经验 <b class="green" id="xpLabel">0 / 100 XP</b></div><div class="metric">已完成今日任务 <b id="todayQuest">0</b></div><button class="pill-btn" id="printBtn">打印手写表</button><input id="importFile" type="file" accept="application/json" style="display:none"></div>
 <nav class="tabs" aria-label="主要模块"><button class="tab active" data-tab="dashboard">1. 命运双轨与RPG每日作战台</button><button class="tab" data-tab="morning">2. 晨间深渊与圣殿挖掘</button><button class="tab" data-tab="day">3. 日间6道模式阻断闹钟</button><button class="tab" data-tab="evening">4. 晚间新赛季三重镜头</button><button class="tab" data-tab="models">5. 7大心智模型与手写画板</button></nav>
 <p class="notice" id="notice">未登录时，记录保存在当前设备。登录云端账号后，可在手机和电脑间同步。</p>
 <main>
@@ -38,7 +50,9 @@
 <div class="footer">心智成长OS · 可离线运行的交互原型 | 个人数据优先 | 引用的方法来源：Dan Koe 公开文章 | 非官方、不构成心理治疗</div>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<section id="cloudAccount" style="padding:12px">
+<section class="card" id="settings" hidden>
+<h2>设置</h2>
+<section id="cloudAccount">
   <details><summary>云端账号</summary>
     <form>
       <label>账号 <input name="account" autocomplete="username" required></label>
@@ -50,7 +64,12 @@
   </details>
   <output aria-live="polite"></output>
 </section>
-<script src="sync.js?v=5"></script>
+<details><summary>数据备份</summary>
+<button class="action" id="exportBtn">导出数据</button>
+<button class="action" id="importBtn">从备份恢复</button>
+</details>
+</section>
+<script src="sync.js?v=6"></script>
 <script>
 (()=>{'use strict';
 const KEY='mind_growth_os_demo_v1';const now=new Date();const today=now.toLocaleDateString('sv-SE');const month=today.slice(0,7);const $=(s)=>document.querySelector(s);const $$=(s)=>Array.from(document.querySelectorAll(s));const toast=(txt)=>{const x=$('#toast');x.textContent=txt;x.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>x.style.display='none',2300)};
@@ -67,20 +86,19 @@ function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function monthXP(){if(!Array.isArray(state.xp[month]))state.xp[month]=[];return state.xp[month]}
 function xpCount(){return monthXP().filter(Boolean).length}
 function renderGrid(){const g=$('#xpGrid');g.innerHTML='';monthXP();for(let i=0;i<100;i++){const b=document.createElement('button');const done=!!state.xp[month][i];b.className='square'+(done?' done':'');b.type='button';b.textContent=done?'★':i+1;b.setAttribute('aria-label',`第${i+1}格，${done?'已完成':'未完成'}`);b.onclick=()=>{const assigned=state.quests.find(q=>q.done&&q.xpIndex===i&&q.day.slice(0,7)===month);if(assigned){assigned.done=false;assigned.xpIndex=null;state.xp[month][i]=false;renderQuests()}else{state.xp[month][i]=!state.xp[month][i]}save();renderGrid();renderStats()};g.appendChild(b)}renderStats()}
-function statsCompletion(){const fields=['anti','vision','annual','monthly','identity','rules'];let answered=fields.filter(k=>String(state.profile[k]||'').trim()).length;answered+=Object.values(state.m||{}).filter(x=>String(x||'').trim()).length;answered+=Object.values(state.e||{}).filter(x=>String(x||'').trim()).length;answered+=Object.values(state.d||{}).filter(x=>String(x||'').trim()).length;return Math.round(Math.min(100,answered/(6+14+7+6)*100))}
+function statsCompletion(){const fields=['anti','vision','annual','monthly','identity','rules'];let answered=fields.filter(k=>String(state.profile[k]||'').trim()).length;answered+=Object.entries(state.m||{}).filter(([key])=>key.startsWith(today+':') && /^\d+$/.test(key.split(':')[1])).map(([,value])=>value).filter(x=>String(x||'').trim()).length;answered+=Object.entries(state.e||{}).filter(([key])=>key.startsWith(today+':') && /^\d+$/.test(key.split(':')[1])).map(([,value])=>value).filter(x=>String(x||'').trim()).length;answered+=Object.entries(state.d||{}).filter(([key])=>key.startsWith(today+':') && /^\d+$/.test(key.split(':')[1])).map(([,value])=>value).filter(x=>String(x||'').trim()).length;return Math.round(Math.min(100,answered/(6+14+7+6)*100))}
 function renderStats(){const xp=xpCount();$('#xpLabel').textContent=xp+' / 100 XP';$('#xpPct').textContent=xp+'%';$('#xpProgress').style.width=xp+'%';$('#completion').textContent=statsCompletion()+'%';$('#todayQuest').textContent=state.quests.filter(q=>q.day===today&&q.done).length;$('#monthTitle').textContent=month+' 月度挑战'}
 function addQuest(){let value=$('#questInput').value.trim();if(!value)return toast('先输入任务内容');state.quests.push({id:Math.random().toString(36).slice(2),day:today,text:value,done:false,xpIndex:null});$('#questInput').value='';save();renderQuests()}function renderQuests(){const qs=state.quests.filter(q=>q.day===today);const box=$('#questList');box.innerHTML=qs.length?'':'<p class="tiny">还没有任务。先写下今天的一个关键行动。</p>';qs.forEach(q=>{const div=document.createElement('div');div.className='quest-item'+(q.done?' done':'');div.innerHTML='<input type="checkbox" aria-label="完成任务" '+(q.done?'checked':'')+'><label>'+esc(q.text)+'</label><button class="action danger" style="padding:2px 8px" aria-label="删除任务">×</button>';div.querySelector('input').onchange=(e)=>{if(e.target.checked){const i=monthXP().findIndex((v)=>!v);if(i<0){e.target.checked=false;return toast('本月经验槽已经满了')}state.xp[month][i]=true;q.xpIndex=i;q.done=true}else{if(q.xpIndex!==null)state.xp[month][q.xpIndex]=false;q.done=false;q.xpIndex=null}save();renderQuests();renderGrid()};div.querySelector('button').onclick=()=>{if(q.done&&q.xpIndex!==null)state.xp[month][q.xpIndex]=false;state.quests=state.quests.filter(x=>x.id!==q.id);save();renderQuests();renderGrid()};box.appendChild(div)})}
-function questionBox(target,question,key,dict){const div=document.createElement('div');div.className='q';div.innerHTML='<b>'+esc(question)+'</b><textarea rows="3" placeholder="记录你的真实想法……" aria-label="'+esc(question)+'"></textarea>';const ta=div.querySelector('textarea');ta.value=state[dict][key]||'';ta.addEventListener('input',()=>{state[dict][key]=ta.value;save();renderStats()});target.appendChild(div)}
-function renderQuestions(){mQ.forEach((x,i)=>questionBox($('#morningQuestions'+(i<4?1:i<8?2:i<11?3:4)),`${i+1}. ${x}`,String(i),'m'));dQ.forEach(([clock,q],i)=>{const div=document.createElement('div');div.className='checkin';div.innerHTML='<span class="clock">'+clock+'</span><strong style="display:block">'+esc(q)+'</strong><textarea rows="2" placeholder="本次觉察……" aria-label="'+esc(q)+'"></textarea>';const ta=div.querySelector('textarea');ta.value=state.d[i]||'';ta.oninput=()=>{state.d[i]=ta.value;save();renderStats()};$('#dayQuestions').appendChild(div)});eQ.forEach((x,i)=>questionBox($('#eveningQuestions'),`${i+1}. ${x}`,String(i),'e'))}
+function questionBox(target,question,key,dict){const div=document.createElement('div');div.className='q';div.innerHTML='<b>'+esc(question)+'</b><textarea rows="3" placeholder="记录你的真实想法……" aria-label="'+esc(question)+'"></textarea>';const ta=div.querySelector('textarea');key=today+':'+key;ta.value=state[dict][key]||'';ta.addEventListener('input',()=>{state[dict][key]=ta.value;save();renderStats()});target.appendChild(div)}
+function renderQuestions(){mQ.forEach((x,i)=>questionBox($('#morningQuestions'+(i<4?1:i<8?2:i<11?3:4)),`${i+1}. ${x}`,String(i),'m'));dQ.forEach(([clock,q],i)=>{const div=document.createElement('div');div.className='checkin';div.innerHTML='<span class="clock">'+clock+'</span><strong style="display:block">'+esc(q)+'</strong><textarea rows="2" placeholder="本次觉察……" aria-label="'+esc(q)+'"></textarea>';const ta=div.querySelector('textarea');ta.value=state.d[today+':'+i]||'';ta.oninput=()=>{state.d[today+':'+i]=ta.value;save();renderStats()};$('#dayQuestions').appendChild(div)});eQ.forEach((x,i)=>questionBox($('#eveningQuestions'),`${i+1}. ${x}`,String(i),'e'))}
 function renderModels(){models.forEach(([title,desc],i)=>{const div=document.createElement('div');div.className='model';div.innerHTML=`<div class="model-title"><span class="model-num">${i+1}</span><h3 style="margin:0">${esc(title)}</h3></div><p class="desc" style="margin:9px 0 0">${esc(desc)}</p>`;$('#modelsGrid').appendChild(div)})}
-function bindProfile(){$$('[data-field]').forEach(el=>{el.value=state.profile[el.dataset.field]||'';el.oninput=()=>{state.profile[el.dataset.field]=el.value;save();renderStats()}})}
+function bindProfile(){$$('[data-field]').forEach(el=>{el.value=state.profile[el.dataset.field]||'';el.oninput=()=>{state.profile[el.dataset.field]=el.value;('[data-field]').filter(other=>other!==el&&other.dataset.field===el.dataset.field).forEach(other=>other.value=el.value);save();renderStats()}})}
 function switchTab(name){$$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));$$('.pane').forEach(x=>x.classList.toggle('active',x.id===name));window.scrollTo({top:0,behavior:'smooth'})}
 $$('.tab').forEach(x=>x.onclick=()=>switchTab(x.dataset.tab));$('#addQuest').onclick=addQuest;$('#questInput').addEventListener('keydown',e=>{if(e.key==='Enter')addQuest()});
 const canvas=$('#drawCanvas'),ctx=canvas.getContext('2d');ctx.strokeStyle='#25314b';ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';let drawing=false;function xy(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}function canvasWhite(){ctx.fillStyle='#fbf9f1';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.strokeStyle='#263a59'}canvasWhite();if(state.canvas){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0);im.src=state.canvas}
 canvas.addEventListener('pointerdown',e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const p=xy(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=xy(e);ctx.lineTo(p.x,p.y);ctx.stroke()});const endStroke=()=>{if(drawing){drawing=false;state.canvas=canvas.toDataURL('image/png');save()}};canvas.addEventListener('pointerup',endStroke);canvas.addEventListener('pointercancel',endStroke);$('#clearCanvas').onclick=()=>{canvasWhite();state.canvas='';save();toast('画板已清空')};$('#saveCanvas').onclick=()=>{const png=canvas.toDataURL('image/png');const name=`心智画板-${today}.png`;if(window.AndroidApp){window.AndroidApp.saveFile(name,'image/png',png.split(',')[1]);toast('请选择图片保存位置')}else{const a=document.createElement('a');a.href=png;a.download=name;a.click();toast('已生成画板图片')}};
-$('#exportBtn').onclick=()=>{const data=JSON.stringify({...state,exportedAt:new Date().toISOString()},null,2);const filename=`心智成长OS备份-${today}.json`;if(window.AndroidApp){window.AndroidApp.saveFile(filename,'application/json',btoa(unescape(encodeURIComponent(data))));toast('请选择备份保存位置')}else{const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);toast('已导出本地备份文件')}};$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async(e)=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(!j||typeof j!=='object'||!('profile'in j)||!('xp'in j)||!('m'in j))throw Error('格式不正确');if(!confirm('导入会替换当前浏览器中的所有记录，是否继续？'))return;state={...fresh(),...j};save();location.reload()}catch(err){toast('导入失败：'+err.message)}};
+$('#exportBtn').onclick=()=>{const data=JSON.stringify({...state,exportedAt:new Date().toISOString()},null,2);const filename=`心智成长OS备份-${today}.json`;if(window.AndroidApp){window.AndroidApp.saveFile(filename,'application/json',btoa(unescape(encodeURIComponent(data))));toast('请选择备份保存位置')}else{const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);toast('已导出本地备份文件')}};$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=async(e)=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(!j||typeof j!=='object'||!('profile'in j)||!('xp'in j)||!('m'in j))throw Error('格式不正确');if(!confirm('恢复会替换当前记录，登录时也会同步到另一端。请先在设置中导出当前备份。确定恢复？'))return;state={...fresh(),...j};save();location.reload()}catch(err){toast('导入失败：'+err.message)}};
 $('#printBtn').onclick=()=>window.print();
-$('#demoBtn').onclick=()=>{if(!confirm('载入范例会覆盖当前内容。建议先导出备份。是否继续？'))return;state=fresh();state.profile={anti:'忙碌却缺少方向，年底发现真正重要的事情没有进展。',vision:'每天清楚知道最重要的事情，有完整的深度工作与家庭时间。',annual:'完成一项有长期价值的作品，保持持续行动与每周复盘。',monthly:'公开发布第一个可用版本，并收集10条真实反馈。',identity:'我是那种每天先完成关键行动，再处理琐事的人。',rules:'保证睡眠、保持诚实、每周陪伴家人。'};state.m=Object.fromEntries(mQ.slice(0,12).map((_,i)=>[i,`演示回答 ${i+1}：觉察旧习惯，并明确下一步可以做的改变。`]));state.e=Object.fromEntries(eQ.slice(0,5).map((_,i)=>[i,`演示复盘 ${i+1}：我将用小行动验证新方向。`]));state.xp[month]=Array.from({length:100},(_,i)=>i<18);state.quests=[{id:'sample1',day:today,text:'90分钟不受打扰的重点项目工作',done:true,xpIndex:0},{id:'sample2',day:today,text:'联系一位真实使用者并记录反馈',done:false,xpIndex:null},{id:'sample3',day:today,text:'晚上用10分钟完成复盘',done:false,xpIndex:null}];save();location.reload()};
 let reminderHandle=null;
 window.onAndroidReminderStatus=(enabled,message)=>{document.querySelector('#reminderBtn').textContent=enabled?'关闭系统提醒':'开启系统提醒';document.querySelector('#reminderStatus').textContent=message|| (enabled?'系统提醒已开启':'系统提醒已关闭');window._androidRemindersEnabled=enabled;};
 if(window.AndroidApp){try{window.AndroidApp.requestReminderStatus();}catch(e){};
@@ -88,7 +106,66 @@ if(window.AndroidApp){try{window.AndroidApp.requestReminderStatus();}catch(e){};
 }else{$('#reminderBtn').onclick=()=>{if(reminderHandle){clearInterval(reminderHandle);reminderHandle=null;$('#reminderBtn').textContent='开启页面内提醒';$('#reminderStatus').textContent='已停止提醒';return}let seen=new Set();function check(){let d=new Date();let hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');dQ.forEach(([t,q])=>{const key=d.toLocaleDateString('sv-SE')+t;if(t===hh&&!seen.has(key)){seen.add(key);toast('模式阻断：'+q)}})}reminderHandle=setInterval(check,30000);check();$('#reminderBtn').textContent='停止页面内提醒';$('#reminderStatus').textContent='提醒已开启；需持续打开本页，锁屏或后台可能暂停。';toast('页面内提醒已开启')}};
 if(window.AndroidApp){$('#printBtn').onclick=()=>window.AndroidApp.printPage();}
 
+$('#openSettings').onclick=()=>{
+  const settings=$('#settings');
+  settings.hidden=false;
+  settings.querySelector('details').open=true;
+  settings.scrollIntoView({block:'start'});
+};
+$('#saveBlocker').onclick=()=>{
+  const note=$('#blocker').value.trim();
+  const next=state.profile.nextAction?.trim();
+  if(!note||!next) return toast('请填写卡点和下一步');
+  state.e[today+':blocker:'+Date.now()]=JSON.stringify({note,next});
+  save();
+  $('#blocker').value='';
+  $('#saveBlocker').closest('details').open=false;
+  renderHistory();
+};
+const review=document.createElement('section');
+review.className='card';
+review.innerHTML='<h2>复盘记录</h2><label>日期 <select></select></label><div></div>';
+$('#evening').prepend(review);
+const dates=review.querySelector('select');
+function renderHistory(){
+  const selected=dates.value||today;
+  const all=new Set([today]);
+  const groups=[['m','晨间',mQ],['d','日间',dQ.map(item=>item[1])],['e','晚间',eQ]];
+  let legacy=false;
+  for(const [group] of groups){
+    for(const key of Object.keys(state[group])){
+      if(/^\d{4}-\d{2}-\d{2}:/.test(key)) all.add(key.slice(0,10));
+      else legacy=true;
+    }
+  }
+  dates.replaceChildren(...[...all].sort().reverse().map(date=>new Option(date,date)));
+  if(legacy) dates.add(new Option('旧记录（无日期）','legacy'));
+  dates.value=selected;
+  const body=review.querySelector('div');
+  body.replaceChildren();
+  for(const [group,label,questions] of groups){
+    for(const [key,value] of Object.entries(state[group])){
+      const match=dates.value==='legacy' ? !key.includes(':') : key.startsWith(dates.value+':');
+      if(!match||!value) continue;
+      const field=dates.value==='legacy'?key:key.slice(11);
+      const row=document.createElement('p');
+      row.style.whiteSpace='pre-wrap';
+      if(field.startsWith('blocker:')){
+        const entry=JSON.parse(value);
+        row.textContent='卡点：'+entry.note+'\n下一步：'+entry.next;
+      }else{
+        row.textContent=label+' · '+(questions[Number(field)]||field)+'\n'+value;
+      }
+      body.appendChild(row);
+    }
+  }
+  if(!body.childElementCount) body.textContent='这一天还没有记录';
+}
+dates.onchange=renderHistory;
+document.querySelector('[data-tab="evening"]').addEventListener('click',renderHistory);
+renderHistory();
 renderQuestions();renderModels();bindProfile();renderQuests();renderGrid();MindCloud.setup(load);
 })();
 </script>
 </body></html>
+
